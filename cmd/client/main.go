@@ -47,6 +47,15 @@ func main() {
 		fmt.Printf("failed to subscibe to queue: %v\n", err)
 	}
 
+	pubsub.SubscribeJSON(
+		conn,
+		routing.ExchangePerilTopic,
+		fmt.Sprintf("%s.%s", routing.ArmyMovesPrefix, username),
+		fmt.Sprintf("%s.*", routing.ArmyMovesPrefix),
+		pubsub.SimpleQueueType(1),
+		handlerMove(gameState),
+	)
+
 	for {
 		words := gamelogic.GetInput()
 		if len(words) == 0 {
@@ -57,7 +66,16 @@ func main() {
 		case "spawn":
 			gameState.CommandSpawn(words)
 		case "move":
-			gameState.CommandMove(words)
+			am, err := gameState.CommandMove(words)
+			if err != nil {
+				fmt.Printf("Failed to make move: %v\n", err)
+			}
+			ch, err := conn.Channel()
+			pubsub.PublishJSON(
+				ch,
+				routing.ExchangePerilTopic,
+				fmt.Sprintf("%s.%s", routing.ArmyMovesPrefix, username),
+				am)
 		case "status":
 			gameState.CommandStatus()
 		case "help":
