@@ -8,6 +8,14 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+type AckType int
+
+const (
+	Ack AckType = iota
+	NackRequeue
+	NackDiscard
+)
+
 func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error {
 
 	valData, err := json.Marshal(val)
@@ -28,7 +36,7 @@ func SubscribeJSON[T any](
 	queueName,
 	key string,
 	queueType SimpleQueueType, // an enum to represent "durable" or "transient"
-	handler func(T),
+	handler func(T) AckType,
 ) error {
 
 	ch, q, err := DeclareAndBind(
@@ -57,8 +65,19 @@ func SubscribeJSON[T any](
 				msg.Nack(false, true)
 				continue
 			}
-			handler(data)
-			msg.Ack(false)
+			ack := handler(data)
+			switch ack {
+			case Ack:
+				msg.Ack(false)
+				fmt.Println("Ack called")
+			case NackRequeue:
+				msg.Nack(false, true)
+				fmt.Println("NackRequeue called")
+			case NackDiscard:
+				msg.Nack(false, false)
+				fmt.Println("NackDiscard called")
+			}
+
 		}
 	}()
 
