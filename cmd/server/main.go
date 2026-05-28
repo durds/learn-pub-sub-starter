@@ -25,11 +25,13 @@ func main() {
 
 	fmt.Println("Sucessfully connected")
 
-	channel, err := conn.Channel()
-	if err != nil {
-		fmt.Printf("Failed to create channel: %v\n", err)
-		os.Exit(1)
-	}
+	channel, _, err := pubsub.DeclareAndBind(
+		conn,
+		routing.ExchangePerilTopic,
+		routing.GameLogSlug,
+		fmt.Sprintf("%s.*", routing.GameLogSlug),
+		pubsub.SimpleQueueType(0),
+	)
 
 	for {
 

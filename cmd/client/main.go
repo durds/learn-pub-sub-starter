@@ -35,16 +35,16 @@ func main() {
 
 	gameState := gamelogic.NewGameState(username)
 
-	_, _, err = pubsub.DeclareAndBind(
+	err = pubsub.SubscribeJSON(
 		conn,
 		routing.ExchangePerilDirect,
 		fmt.Sprintf("%s.%s", routing.PauseKey, username),
 		routing.PauseKey,
 		pubsub.SimpleQueueType(1),
+		handlerPause(gameState),
 	)
 	if err != nil {
-		fmt.Printf("Failed to declare and bind: %v\n", err)
-		os.Exit(1)
+		fmt.Printf("failed to subscibe to queue: %v\n", err)
 	}
 
 	for {
