@@ -45,15 +45,29 @@ func main() {
 	)
 	if err != nil {
 		fmt.Printf("failed to subscibe to queue: %v\n", err)
+		os.Exit(1)
 	}
 
+	mvCh, err := conn.Channel()
+	if err != nil {
+		fmt.Printf("failed to get channel from connection: %v\n", err)
+		os.Exit(1)
+	}
 	pubsub.SubscribeJSON(
 		conn,
 		routing.ExchangePerilTopic,
 		fmt.Sprintf("%s.%s", routing.ArmyMovesPrefix, username),
 		fmt.Sprintf("%s.*", routing.ArmyMovesPrefix),
 		pubsub.SimpleQueueType(1),
-		handlerMove(gameState),
+		handlerMove(gameState, mvCh),
+	)
+	pubsub.SubscribeJSON(
+		conn,
+		routing.ExchangePerilTopic,
+		routing.WarRecognitionsPrefix,
+		fmt.Sprintf("%s.*", routing.WarRecognitionsPrefix),
+		pubsub.SimpleQueueType(0),
+		handleWarMsg(gameState),
 	)
 
 	for {
