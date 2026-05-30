@@ -13,6 +13,16 @@
       "args": [],
       "console": "integratedTerminal",
       "env": {}
+    },
+    {
+      "name": "Debug Client",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/cmd/client",
+      "args": [],
+      "console": "integratedTerminal",
+      "env": {}
     }
   ]
 }
