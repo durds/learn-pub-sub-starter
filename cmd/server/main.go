@@ -25,13 +25,25 @@ func main() {
 
 	fmt.Println("Sucessfully connected")
 
-	channel, _, err := pubsub.DeclareAndBind(
+	err = pubsub.SubsCribeGob(
 		conn,
 		routing.ExchangePerilTopic,
 		routing.GameLogSlug,
 		fmt.Sprintf("%s.*", routing.GameLogSlug),
 		pubsub.SimpleQueueType(0),
+		handlerWriteLogs,
 	)
+
+	if err != nil {
+		fmt.Printf("Failed to subscribe to game_logs queue: %v", err)
+		os.Exit(1)
+	}
+
+	channel, err := conn.Channel()
+	if err != nil {
+		fmt.Printf("Failed to open channel: %v", err)
+		os.Exit(1)
+	}
 
 	for {
 

@@ -1,42 +1,19 @@
 package pubsub
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type AckType int
-
-const (
-	Ack AckType = iota
-	NackRequeue
-	NackDiscard
-)
-
-func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error {
-
-	valData, err := json.Marshal(val)
-	if err != nil {
-		return err
-	}
-
-	ch.PublishWithContext(context.Background(), exchange, key, false, false, amqp.Publishing{
-		ContentType: "application/json",
-		Body:        valData,
-	})
-	return nil
-}
-
-func SubscribeJSON[T any](
+func subscribe[T any](
 	conn *amqp.Connection,
 	exchange,
 	queueName,
 	key string,
-	queueType SimpleQueueType, // an enum to represent "durable" or "transient"
+	simpleQueueType SimpleQueueType,
 	handler func(T) AckType,
+	unmarshaller func([]byte) (T, error),
 ) error {
 
 	ch, q, err := DeclareAndBind(
@@ -44,7 +21,7 @@ func SubscribeJSON[T any](
 		exchange,
 		queueName,
 		key,
-		queueType,
+		simpleQueueType,
 	)
 
 	if err != nil {
@@ -59,7 +36,8 @@ func SubscribeJSON[T any](
 	go func() {
 		for msg := range deliveryCh {
 			var data T
-			err := json.Unmarshal(msg.Body, &data)
+			data, err := unmarshaller(msg.Body)
+
 			if err != nil {
 				fmt.Printf("Failed to Unmarshal msg: %v", err)
 				msg.Nack(false, true)
@@ -82,4 +60,5 @@ func SubscribeJSON[T any](
 	}()
 
 	return nil
+
 }
