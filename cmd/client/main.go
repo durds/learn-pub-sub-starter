@@ -67,7 +67,7 @@ func main() {
 		routing.WarRecognitionsPrefix,
 		fmt.Sprintf("%s.*", routing.WarRecognitionsPrefix),
 		pubsub.SimpleQueueType(0),
-		handleWarMsg(gameState),
+		handleWarMsg(gameState, mvCh),
 	)
 
 	for {
